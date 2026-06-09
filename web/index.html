@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sqwords — the word square game</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-side left">
+    <button class="icon-btn" id="btn-help" title="How to play">?</button>
+  </div>
+  <h1 class="logo">SQ<span>WORDS</span></h1>
+  <div class="header-side right">
+    <button class="icon-btn" id="btn-stats" title="Stats &amp; history">📊</button>
+    <button class="icon-btn" id="btn-board" title="Leaderboard">🏆</button>
+  </div>
+</header>
+
+<div class="mode-bar">
+  <button class="mode-btn active" id="btn-daily">Daily</button>
+  <button class="mode-btn" id="btn-random">Random</button>
+  <span class="mode-info" id="mode-info"></span>
+</div>
+
+<main>
+  <div id="board" class="board"></div>
+
+  <div class="status-row">
+    <div class="hearts" id="hearts"></div>
+    <div class="score">Score <b id="score">0</b></div>
+    <button class="hint-btn" id="btn-hint" title="Reveal a letter (-15 pts)">💡 Hint <small>-15</small></button>
+  </div>
+
+  <div class="solved-row" id="solved-row"></div>
+
+  <div class="entry" id="entry"></div>
+
+  <div class="keyboard" id="keyboard"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<!-- HOW TO PLAY -->
+<div class="modal-back hidden" id="modal-help">
+  <div class="modal">
+    <button class="modal-x" data-close>×</button>
+    <h2>How to play</h2>
+    <p>Four secret 5-letter words form a <b>square</b> — top, bottom, left and right —
+       sharing their corner letters.</p>
+    <p>Guess any valid 5-letter word. Every letter in your guess is revealed
+       <b>everywhere it appears</b> in the square, hangman-style.</p>
+    <ul>
+      <li>❤️ You can survive only <b>3 wrong guesses</b>. Naming one of the four words exactly is a <b>free</b> guess.</li>
+      <li>🎯 Solve words early for more points: 100&nbsp;→&nbsp;80&nbsp;→&nbsp;60&nbsp;→&nbsp;40&nbsp;→&nbsp;30&nbsp;→&nbsp;20&nbsp;→&nbsp;10 by guess number. Naming a word exactly beats letting it auto-reveal (−10).</li>
+      <li>💡 Hints reveal a random letter but cost <b>15 points</b> (max 3 per game).</li>
+      <li>🏅 Win bonus: +25 points per unused wrong guess.</li>
+    </ul>
+    <p><b>Daily</b> gives everyone the same puzzle each day — one scored attempt.
+       <b>Random</b> is unlimited free play.</p>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="modal-back hidden" id="modal-stats">
+  <div class="modal">
+    <button class="modal-x" data-close>×</button>
+    <h2>Your stats</h2>
+    <div class="stat-grid" id="stat-grid"></div>
+    <h3>Recent games</h3>
+    <div id="history-list" class="history-list"></div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="modal-back hidden" id="modal-board">
+  <div class="modal">
+    <button class="modal-x" data-close>×</button>
+    <h2>🏆 Leaderboard</h2>
+    <div id="leaderboard-list" class="leaderboard-list"></div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div class="modal-back hidden" id="modal-over">
+  <div class="modal">
+    <button class="modal-x" data-close>×</button>
+    <h2 id="over-title"></h2>
+    <div class="over-words" id="over-words"></div>
+    <div class="over-score" id="over-score"></div>
+    <div class="over-name hidden" id="over-name-row">
+      <label>Save score as:&nbsp;<input id="over-name" maxlength="12" placeholder="your name"></label>
+      <button class="small-btn" id="btn-save-score">Save</button>
+    </div>
+    <div class="over-actions">
+      <button class="small-btn" id="btn-share">📋 Share</button>
+      <button class="small-btn primary" id="btn-again">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script src="words.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
