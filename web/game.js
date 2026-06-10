@@ -216,6 +216,15 @@ async function fetchRemoteScores() {
   return Array.isArray(data.scores) ? data.scores : [];
 }
 
+/* one-time: push scores that were saved on this device before the
+   global leaderboard existed (spaced out for the API rate limit) */
+function migrateLocalScores() {
+  if (store.get('migrated', false)) return;
+  store.set('migrated', true);
+  const top = store.get('leaderboard', []).slice(0, 5);
+  top.forEach((e, i) => setTimeout(() => pushScoreRemote(e), i * 21000));
+}
+
 function computeStats() {
   const hist = store.get('history', []);
   const played = hist.length;
@@ -630,6 +639,7 @@ function initUI() {
 
   buildKeyboard();
   startGame('daily');
+  migrateLocalScores();
 
   /* first-visit help — after startGame, which closes all modals */
   if (!store.get('seenHelp', false)) {
