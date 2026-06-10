@@ -11,7 +11,7 @@ const MAX_HINTS   = 3;
 const HINT_COST   = 15;
 const WIN_BONUS   = 25;                       // per unused wrong guess
 const POINTS      = [100, 80, 60, 40, 30, 20, 10];
-const EPOCH       = '2026-01-01';             // daily puzzle #1
+const EPOCH       = '2026-06-09';             // daily puzzle #1
 
 const WORD_SET = new Set(ALLOWED_WORDS);   // any of these is a valid guess
 const byFirst = {}, byFirstLast = {};      // puzzle words come only from ANSWER_WORDS
@@ -114,8 +114,9 @@ function newGame(mode) {
 const basePoints = n => POINTS[Math.min(Math.max(n, 1) - 1, POINTS.length - 1)];
 
 /* award points for any newly named/auto-completed words, then
-   check the end of the game. gn = guess number used for scoring. */
-function settle(gn, namedWord) {
+   check the end of the game. gn = guess number used for scoring.
+   byHint: the reveal came from a hint -- words it completes earn nothing. */
+function settle(gn, namedWord, byHint) {
   G.words.forEach((w, i) => {
     if (namedWord && w === namedWord && !G.solved[i]) {
       G.solved[i] = 'named';
@@ -125,7 +126,7 @@ function settle(gn, namedWord) {
   G.words.forEach((w, i) => {
     if (!G.solved[i] && [...w].every(c => G.revealed.has(c))) {
       G.solved[i] = 'auto';
-      G.points += basePoints(gn) - 10;
+      if (!byHint) G.points += basePoints(gn) - 10;
     }
   });
   if ([...G.distinct].every(c => G.revealed.has(c))) {
@@ -164,7 +165,7 @@ function useHint() {
   G.revealed.add(pool[Math.floor(Math.random() * pool.length)]);
   G.hintsUsed++;
   G.points -= HINT_COST;
-  settle(G.guesses.length, null);
+  settle(G.guesses.length, null, true);
   return true;
 }
 
@@ -221,7 +222,7 @@ function shareText() {
   for (let r = 0; r < 5; r++) {
     for (let c = 0; c < 5; c++) {
       const ch = cellLetter(r, c);
-      grid += ch === null ? '  ' : !seen.has(ch) ? '🟥' : namedLetters.has(ch) ? '🟨' : '🟩';
+      grid += ch === null ? '⬛' : !seen.has(ch) ? '🟥' : namedLetters.has(ch) ? '🟨' : '🟩';
     }
     grid += '\n';
   }
@@ -407,6 +408,8 @@ function initUI() {
       chip.textContent = `${WORD_LABELS[i]}: ${w}`;
       els.overWords.appendChild(chip);
     });
+    document.getElementById('over-grid').textContent =
+      shareText().split('\n').slice(2).join('\n').trimEnd();
     els.overScore.textContent = `${G.points} points · ${G.guesses.length} guesses` +
       (G.hintsUsed ? ` · ${G.hintsUsed} hint${G.hintsUsed > 1 ? 's' : ''}` : '');
     const lb = store.get('leaderboard', []);
