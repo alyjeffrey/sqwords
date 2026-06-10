@@ -186,12 +186,34 @@ function recordGame() {
   store.set('history', hist.slice(0, 200));
 }
 
+const LB_API = 'https://sqwords-leaderboard.alyjeffrey.workers.dev';
+
 function saveToLeaderboard(name) {
+  const entry = { name, score: G.points, d: G.dateStr, mode: G.mode, won: G.won };
   const lb = store.get('leaderboard', []);
-  lb.push({ name, score: G.points, d: G.dateStr, mode: G.mode, won: G.won });
+  lb.push(entry);
   lb.sort((a, b) => b.score - a.score);
   store.set('leaderboard', lb.slice(0, 10));
   store.set('name', name);
+  return entry;
+}
+
+/* global leaderboard via Cloudflare Worker; resolves true on success */
+async function pushScoreRemote(entry) {
+  try {
+    const res = await fetch(LB_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+async function fetchRemoteScores() {
+  const res = await fetch(LB_API, { cache: 'no-store' });
+  if (!res.ok) throw new Error('leaderboard fetch failed');
+  const data = await res.json();
+  return Array.isArray(data.scores) ? data.scores : [];
 }
 
 function computeStats() {
@@ -418,7 +440,8 @@ function initUI() {
     const savedName = store.get('name', '');
     if (qualifies && savedName) {
       // name already known -- save automatically, no extra click needed
-      saveToLeaderboard(savedName);
+      const entry = saveToLeaderboard(savedName);
+      pushScoreRemote(entry);
       els.overNameRow.classList.add('hidden');
       els.overScore.textContent += ` · saved to leaderboard as ${savedName}`;
     } else {
@@ -485,16 +508,24 @@ function initUI() {
       : '<div class="empty-note">No games yet — go play!</div>';
   }
 
-  function renderLeaderboard() {
-    const lb = store.get('leaderboard', []);
-    document.getElementById('leaderboard-list').innerHTML = lb.length
-      ? lb.map((e, i) => `<div class="lb-row">
+  async function renderLeaderboard() {
+    const listEl = document.getElementById('leaderboard-list');
+    listEl.innerHTML = '<div class="empty-note">Loading global leaderboard…</div>';
+    let lb, note = '';
+    try {
+      lb = await fetchRemoteScores();
+    } catch {
+      lb = store.get('leaderboard', []);
+      note = '<div class="empty-note">⚠ Global leaderboard unreachable — showing this device only.</div>';
+    }
+    listEl.innerHTML = note + (lb.length
+      ? lb.slice(0, 10).map((e, i) => `<div class="lb-row">
             <span class="rank">${i + 1}</span>
             <span class="name">${escapeHtml(e.name)}</span>
             <span class="meta">${e.d} · ${e.mode}</span>
             <span class="pts">${e.score}</span>
           </div>`).join('')
-      : '<div class="empty-note">No scores yet. Finish a game with points to claim the top spot!</div>';
+      : '<div class="empty-note">No scores yet. Finish a game with points to claim the top spot!</div>');
   }
   const escapeHtml = s => s.replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -569,9 +600,11 @@ function initUI() {
   });
   document.getElementById('btn-save-score').addEventListener('click', () => {
     const name = els.overName.value.trim() || 'anon';
-    saveToLeaderboard(name);
+    const entry = saveToLeaderboard(name);
     els.overNameRow.classList.add('hidden');
-    toast('Score saved to leaderboard!');
+    pushScoreRemote(entry).then(ok =>
+      toast(ok ? 'Score saved to the global leaderboard!'
+               : 'Saved on this device — global leaderboard unreachable'));
   });
   // pressing Enter in the name box saves too (the game key handler skips inputs)
   els.overName.addEventListener('keydown', e => {

@@ -1,0 +1,7 @@
+name = "sqwords-leaderboard"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+[[kv_namespaces]]
+binding = "LB"
+id = "bb43b2141d7a4733b74007740a489c5c"
