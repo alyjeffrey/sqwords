@@ -348,6 +348,7 @@ function initUI() {
     els.keyboard.addEventListener('click', e => {
       const b = e.target.closest('.key');
       if (!b) return;
+      b.blur();
       if (b.dataset.letter) typeLetter(b.dataset.letter);
       else if (b.dataset.action === 'enter') doSubmit();
       else if (b.dataset.action === 'back') backspace();
@@ -492,6 +493,9 @@ function initUI() {
 
   /* ---- top-level buttons ---- */
   function startGame(mode) {
+    // drop focus from whatever button started the game, so Enter/Space
+    // afterwards only submit guesses instead of re-triggering the button
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     newGame(mode);
     els.daily.classList.toggle('active', mode === 'daily');
     els.random.classList.toggle('active', mode === 'random');
@@ -505,6 +509,7 @@ function initUI() {
   els.daily.addEventListener('click', () => startGame('daily'));
   els.random.addEventListener('click', () => startGame('random'));
   els.hint.addEventListener('click', () => {
+    els.hint.blur();
     if (useHint()) {
       render();
       if (G.over) finishGame();
@@ -537,7 +542,12 @@ function initUI() {
     if (overOpen && e.key === 'Enter') return;
     if (!document.querySelector('.modal-back:not(.hidden)')) {
       if (/^[a-zA-Z]$/.test(e.key)) typeLetter(e.key.toLowerCase());
-      else if (e.key === 'Enter') doSubmit();
+      else if (e.key === 'Enter') {
+        // prevent Enter from also "clicking" a still-focused button
+        // (e.g. the Random tab), which would restart the game
+        e.preventDefault();
+        doSubmit();
+      }
       else if (e.key === 'Backspace') backspace();
     } else if (e.key === 'Escape') closeModals();
   });
