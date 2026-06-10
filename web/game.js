@@ -180,6 +180,7 @@ function recordGame() {
   hist.unshift({
     d: G.dateStr, mode: G.mode, won: G.won, score: G.points,
     guesses: G.guesses.length, hints: G.hintsUsed, words: G.words,
+    share: shareText(),
   });
   store.set('history', hist.slice(0, 200));
 }
@@ -214,11 +215,13 @@ function computeStats() {
 /* ---------------- share text ---------------------------------------- */
 function shareText() {
   const seen = G.won ? G.revealed : (G.playerRevealed || G.revealed);
+  const namedLetters = new Set();
+  G.words.forEach((w, i) => { if (G.solved[i] === 'named') for (const c of w) namedLetters.add(c); });
   let grid = '';
   for (let r = 0; r < 5; r++) {
     for (let c = 0; c < 5; c++) {
       const ch = cellLetter(r, c);
-      grid += ch === null ? '  ' : seen.has(ch) ? '🟩' : '🟥';
+      grid += ch === null ? '  ' : !seen.has(ch) ? '🟥' : namedLetters.has(ch) ? '🟨' : '🟩';
     }
     grid += '\n';
   }
@@ -409,8 +412,16 @@ function initUI() {
     const lb = store.get('leaderboard', []);
     const qualifies = !G.replay && G.points > 0 &&
       (lb.length < 10 || G.points > lb[lb.length - 1].score);
-    els.overNameRow.classList.toggle('hidden', !qualifies);
-    els.overName.value = store.get('name', '');
+    const savedName = store.get('name', '');
+    if (qualifies && savedName) {
+      // name already known -- save automatically, no extra click needed
+      saveToLeaderboard(savedName);
+      els.overNameRow.classList.add('hidden');
+      els.overScore.textContent += ` · saved to leaderboard as ${savedName}`;
+    } else {
+      els.overNameRow.classList.toggle('hidden', !qualifies);
+      els.overName.value = savedName;
+    }
     openModal('modal-over');
   }
 
@@ -426,6 +437,31 @@ function initUI() {
 
   /* ---- stats / leaderboard panels ---- */
   function renderStats() {
+    const today = todayStr();
+    const td = store.get('history', []).find(h => h.mode === 'daily' && h.d === today);
+    const tdEl = document.getElementById('today-daily');
+    if (td) {
+      tdEl.innerHTML = `<div class="today-box">
+          <div class="today-head">Daily #${dailyNumber(today)} · ${td.won ? '🏆 Won' : '💀 Lost'} ·
+            ${td.score} pts · ${td.guesses} guesses</div>
+          ${td.share ? `<pre class="share-grid">${td.share.split('\n').slice(2).join('\n').trimEnd()}</pre>` : ''}
+          <button class="small-btn" id="btn-copy-daily">📋 Copy result</button>
+        </div>`;
+      document.getElementById('btn-copy-daily').addEventListener('click', async () => {
+        const text = td.share ||
+          `SQWORDS Daily #${dailyNumber(today)} · ${today}\n` +
+          `${td.won ? '🏆 WON' : '💀 LOST'} · ${td.score} pts · ${td.guesses} guesses`;
+        try {
+          await navigator.clipboard.writeText(text);
+          toast('Result copied — paste it anywhere!');
+        } catch {
+          toast('Could not copy — see console');
+          console.log(text);
+        }
+      });
+    } else {
+      tdEl.innerHTML = `<div class="empty-note">You haven't finished today's daily (#${dailyNumber(today)}) yet.</div>`;
+    }
     const s = computeStats();
     const cells = [
       [s.played, 'played'], [s.winPct + '%', 'win rate'],
@@ -533,6 +569,10 @@ function initUI() {
     saveToLeaderboard(name);
     els.overNameRow.classList.add('hidden');
     toast('Score saved to leaderboard!');
+  });
+  // pressing Enter in the name box saves too (the game key handler skips inputs)
+  els.overName.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-save-score').click();
   });
 
   /* physical keyboard */
