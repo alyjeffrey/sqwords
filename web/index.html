@@ -56,7 +56,7 @@
     <ul>
       <li>❤️ You can survive only <b>3 wrong guesses</b>. Naming one of the four words exactly is a <b>free</b> guess.</li>
       <li>🎯 Solve words early for more points: 100&nbsp;→&nbsp;80&nbsp;→&nbsp;60&nbsp;→&nbsp;40&nbsp;→&nbsp;30&nbsp;→&nbsp;20&nbsp;→&nbsp;10 by guess number. Naming a word exactly beats letting it auto-reveal (−10).</li>
-      <li>💡 Hints reveal a random letter but cost <b>15 points</b> (max 3 per game).</li>
+      <li>💡 Hints reveal a random letter but cost <b>15 points</b> (max 3 per game) — and a word finished off by a hint earns no points.</li>
       <li>🏅 Win bonus: +25 points per unused wrong guess.</li>
     </ul>
     <p><b>Daily</b> gives everyone the same puzzle each day — one scored attempt.
@@ -91,6 +91,7 @@
     <button class="modal-x" data-close>×</button>
     <h2 id="over-title"></h2>
     <div class="over-words" id="over-words"></div>
+    <pre class="share-grid" id="over-grid"></pre>
     <div class="over-score" id="over-score"></div>
     <div class="over-name hidden" id="over-name-row">
       <label>Save score as:&nbsp;<input id="over-name" maxlength="12" placeholder="your name"></label>
